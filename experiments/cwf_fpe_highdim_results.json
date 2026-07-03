@@ -1,0 +1,84 @@
+{
+  "params": {
+    "N": 4000,
+    "sigma": 2.0,
+    "R": 10.0,
+    "B": 48,
+    "k": 20,
+    "trials": 40
+  },
+  "rows": [
+    {
+      "m": 1,
+      "acc_bundle": 0.95,
+      "t_bundle_ms": 0.008227998478105292,
+      "acc_sparse": 0.95,
+      "t_sparse_ms": 0.010134001058759168,
+      "sparse_mem_bytes": 160,
+      "acc_grid": 0.975,
+      "t_grid_ms": 0.0218700006371364,
+      "grid_mem_bytes": 384.0,
+      "grid_feasible": true
+    },
+    {
+      "m": 2,
+      "acc_bundle": 1.0,
+      "t_bundle_ms": 0.00800099951447919,
+      "acc_sparse": 1.0,
+      "t_sparse_ms": 0.015806501323822886,
+      "sparse_mem_bytes": 320,
+      "acc_grid": 0.95,
+      "t_grid_ms": 0.02521649730624631,
+      "grid_mem_bytes": 18432.0,
+      "grid_feasible": true
+    },
+    {
+      "m": 3,
+      "acc_bundle": 1.0,
+      "t_bundle_ms": 0.00815499879536219,
+      "acc_sparse": 1.0,
+      "t_sparse_ms": 0.016341502487193793,
+      "sparse_mem_bytes": 480,
+      "acc_grid": 0.95,
+      "t_grid_ms": 0.22321299911709502,
+      "grid_mem_bytes": 884736.0,
+      "grid_feasible": true
+    },
+    {
+      "m": 4,
+      "acc_bundle": 1.0,
+      "t_bundle_ms": 0.009136001608567312,
+      "acc_sparse": 1.0,
+      "t_sparse_ms": 0.019016504666069523,
+      "sparse_mem_bytes": 640,
+      "acc_grid": 0.95,
+      "t_grid_ms": 5.066849997092504,
+      "grid_mem_bytes": 42467328.0,
+      "grid_feasible": true
+    },
+    {
+      "m": 5,
+      "acc_bundle": 1.0,
+      "t_bundle_ms": 0.006993501301622018,
+      "acc_sparse": 1.0,
+      "t_sparse_ms": 0.01375000283587724,
+      "sparse_mem_bytes": 800,
+      "acc_grid": null,
+      "t_grid_ms": null,
+      "grid_mem_bytes": 2038431744.0,
+      "grid_feasible": false
+    },
+    {
+      "m": 6,
+      "acc_bundle": 1.0,
+      "t_bundle_ms": 0.007080998329911381,
+      "acc_sparse": 1.0,
+      "t_sparse_ms": 0.013947999832453206,
+      "sparse_mem_bytes": 960,
+      "acc_grid": null,
+      "t_grid_ms": null,
+      "grid_mem_bytes": 97844723712.0,
+      "grid_feasible": false
+    }
+  ]
+}

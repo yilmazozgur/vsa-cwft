@@ -42,33 +42,42 @@
       "R": 0.0,
       "coherent": 1.0,
       "naive": 1.0,
-      "decohered": 0.2
+      "decohered": 0.2,
+      "decode": 1.0
     },
     {
       "R": 1.0,
       "coherent": 1.0,
       "naive": 0.51,
-      "decohered": 0.12
+      "decohered": 0.12,
+      "decode": 1.0
     },
     {
       "R": 3.0,
       "coherent": 1.0,
       "naive": 0.22,
-      "decohered": 0.16
+      "decohered": 0.16,
+      "decode": 1.0
     },
     {
       "R": 8.0,
       "coherent": 1.0,
       "naive": 0.22,
-      "decohered": 0.2
+      "decohered": 0.2,
+      "decode": 1.0
     },
     {
       "R": 20.0,
       "coherent": 1.0,
       "naive": 0.14,
-      "decohered": 0.19
+      "decohered": 0.19,
+      "decode": 1.0
     }
   ],
+  "route_cost_ms": {
+    "fingerprint": 0.45366506004938856,
+    "decode": 0.4566102399257943
+  },
   "noise": [
     {
       "noise": 0.1,

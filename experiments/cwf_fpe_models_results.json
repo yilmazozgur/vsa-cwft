@@ -1,0 +1,36 @@
+{
+  "params": {
+    "N": 4000,
+    "sigma": 2.0
+  },
+  "rows": [
+    {
+      "model": "FHRR",
+      "resolution": 0.590738423028786,
+      "cell": 1.181476846057572,
+      "wigner_excess": 0.1406494722905972,
+      "continuous_phase": true
+    },
+    {
+      "model": "HRR",
+      "resolution": 0.6107634543178974,
+      "cell": 1.2215269086357947,
+      "wigner_excess": 0.06260551512670046,
+      "continuous_phase": true
+    },
+    {
+      "model": "MAP",
+      "resolution": 0.6808510638297872,
+      "cell": 1.3617021276595744,
+      "wigner_excess": 0.06657298695474612,
+      "continuous_phase": false
+    },
+    {
+      "model": "BSC",
+      "resolution": 0.6808510638297872,
+      "cell": 1.3617021276595744,
+      "wigner_excess": 0.06657298695474612,
+      "continuous_phase": false
+    }
+  ]
+}

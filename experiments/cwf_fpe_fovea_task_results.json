@@ -1,0 +1,36 @@
+{
+  "params": {
+    "N": 4000,
+    "sigma": 2.0,
+    "fovea": 5.0,
+    "noise": 1.0,
+    "trials": 200,
+    "seeds": 3
+  },
+  "rows": [
+    {
+      "region": "fovea",
+      "encoding": "flat",
+      "rmse_mean": 0.005648924869762176,
+      "rmse_std": 0.0003925240838613566
+    },
+    {
+      "region": "fovea",
+      "encoding": "squeezed",
+      "rmse_mean": 0.003002033303481099,
+      "rmse_std": 4.906101978761163e-05
+    },
+    {
+      "region": "periphery",
+      "encoding": "flat",
+      "rmse_mean": 0.005902451827330952,
+      "rmse_std": 0.00013735556722049228
+    },
+    {
+      "region": "periphery",
+      "encoding": "squeezed",
+      "rmse_mean": 0.011208335643635998,
+      "rmse_std": 0.0004267017566219647
+    }
+  ]
+}

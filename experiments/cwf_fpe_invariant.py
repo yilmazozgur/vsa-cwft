@@ -46,10 +46,16 @@ def bundle(values, phases=None):
     return sum(np.exp(1j * p) * np.exp(1j * v * THETA) for v, p in zip(values, phases))
 
 
+COSM = np.cos(np.outer(DS, THETA))           # precomputed readout matrix (fair
+                                             # cost comparison with the decode
+                                             # route, whose codebook is also
+                                             # precomputed)
+
+
 def fingerprint(values, phases=None):
     """autocorrelation = interval histogram (translation-invariant)."""
     P = np.abs(bundle(values, phases)) ** 2
-    fp = (np.cos(np.outer(DS, THETA)) @ P) / N
+    fp = (COSM @ P) / N
     return fp / (np.linalg.norm(fp) + 1e-12)
 
 
@@ -58,7 +64,7 @@ def decohered_fingerprint(values, ntrials=15):
     for _ in range(ntrials):
         ph = RNG.uniform(0, 2 * np.pi, len(values))
         P = np.abs(bundle(values, ph)) ** 2
-        acc += (np.cos(np.outer(DS, THETA)) @ P) / N
+        acc += (COSM @ P) / N
     return acc / (np.linalg.norm(acc) + 1e-12)
 
 
@@ -88,12 +94,30 @@ if __name__ == "__main__":
         b = bundle(values); b = b / (np.linalg.norm(b) + 1e-12)
         return int(np.argmax([np.real(np.vdot(bt, b)) for bt in bd_templ]))
 
+    # decode-then-compare-intervals: the honest classical route (also invariant).
+    # Peak-pick m values from the similarity profile, take offsets from the
+    # smallest, nearest-template in interval space.  Costs a full grid sweep.
+    dec_grid = np.arange(-1.0, 35.0, 0.02)
+    dec_book = np.exp(-1j * np.outer(dec_grid, THETA))
+    iv_templ = [np.sort(t) - np.min(t) for t in types]
+
+    def classify_decode(values):
+        sim = np.real(dec_book @ bundle(values)) / N
+        peaks = []
+        s = sim.copy()
+        for _ in range(m):
+            i = int(np.argmax(s))
+            peaks.append(dec_grid[i])
+            s[np.abs(dec_grid - dec_grid[i]) < 0.8] = -np.inf
+        iv = np.sort(peaks) - np.min(peaks)
+        return int(np.argmin([np.sum((iv - t) ** 2) for t in iv_templ]))
+
     print(f"\n  accuracy vs transposition range (random root in [0,R]); noise 0.1; "
           f"100 samples/cell; chance={1/K:.2f}")
     print(f"  {'R (transpose)':>14} | {'coherent fp':>11} | {'naive bundle':>12} | {'decohered fp':>12}")
     out = {"types": [t.tolist() for t in types], "rows": []}
     for R in [0.0, 1.0, 3.0, 8.0, 20.0]:
-        acc_c = acc_n = acc_d = 0
+        acc_c = acc_n = acc_d = acc_dec = 0
         NS = 100
         for _ in range(NS):
             t = RNG.integers(K)
@@ -102,9 +126,28 @@ if __name__ == "__main__":
             acc_c += classify_fp(fingerprint(vals)) == t
             acc_n += classify_naive(vals) == t
             acc_d += classify_fp(decohered_fingerprint(vals)) == t
+            acc_dec += classify_decode(vals) == t
         acc_c, acc_n, acc_d = acc_c / NS, acc_n / NS, acc_d / NS
-        out["rows"].append(dict(R=R, coherent=acc_c, naive=acc_n, decohered=acc_d))
-        print(f"  {R:>14} | {acc_c:>11.2f} | {acc_n:>12.2f} | {acc_d:>12.2f}")
+        acc_dec = acc_dec / NS
+        out["rows"].append(dict(R=R, coherent=acc_c, naive=acc_n, decohered=acc_d,
+                                decode=acc_dec))
+        print(f"  {R:>14} | {acc_c:>11.2f} | {acc_n:>12.2f} | {acc_d:>12.2f} | "
+              f"decode {acc_dec:.2f}")
+
+    # cost of the two invariant routes (per classification, same machine)
+    import time as _time
+    vals = types[0] + 10.0
+    t0 = _time.perf_counter()
+    for _ in range(50):
+        classify_fp(fingerprint(vals))
+    t_fp = (_time.perf_counter() - t0) / 50
+    t0 = _time.perf_counter()
+    for _ in range(50):
+        classify_decode(vals)
+    t_dec = (_time.perf_counter() - t0) / 50
+    out["route_cost_ms"] = dict(fingerprint=t_fp * 1e3, decode=t_dec * 1e3)
+    print(f"\n  route cost: fingerprint {t_fp*1e3:.2f} ms vs decode-then-intervals "
+          f"{t_dec*1e3:.2f} ms per classification ({t_dec/t_fp:.1f}x)")
 
     # robustness: accuracy vs noise at full transposition (R=20) -- not brittle?
     print(f"\n  robustness: coherent-fp accuracy vs note jitter (full transposition R=20):")
