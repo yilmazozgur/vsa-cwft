@@ -64,7 +64,7 @@ def resonator(c, books, kind, T, theta, rng):
     else:
         xh = [books[f].sum(axis=1) for f in range(F)]
         xh = [x / (np.abs(x) + 1e-12) for x in xh]
-    hist = []
+    hist, decs = [], []
     for t in range(T):
         new = []
         for f in range(F):
@@ -90,13 +90,27 @@ def resonator(c, books, kind, T, theta, rng):
             (books[f].conj().T if kind != "bipolar" else books[f].T) @ xh[f])))
             for f in range(F))
         hist.append((dec, [x.copy() for x in xh]))
-        # fixed-point (halt) detection
-        if t > 0:
-            same = all(np.allclose(xh[f], hist[t - 1][1][f]) for f in range(F))
-            if same:
-                return dec, True, t + 1, "fp"
-    # didn't halt within T -> check for period-2 limit cycle
-    return hist[-1][0], False, T, "nohalt"
+        decs.append(dec)
+        # CYCLE DETECTION, and only where it is meaningful.
+        # The previous version compared the state only with its IMMEDIATE
+        # predecessor, i.e. it tested for period 1, and then labelled every
+        # non-success at the cap a "limit cycle" without testing anything.  Two
+        # facts make that label empty.  (a) The update is Jacobi-style (every
+        # factor is recomputed from the PREVIOUS state), so at F=2 the attractors
+        # have EVEN period: a period-1 fixed point essentially never occurs, and
+        # the period-1 test therefore never fires.  Measured at theta=0, the
+        # period histogram is {2: 49, 4: 58, 6: 21, 8: 19, ...} with no period 1.
+        # (b) Under injected noise the state is perturbed afresh every iteration,
+        # so exact state equality is impossible and EVERY noisy run would be
+        # labelled non-halting by construction.  We therefore search the whole
+        # history for a genuine repeat, and only in the deterministic case.
+        if theta == 0.0:
+            for u in range(len(hist) - 1):
+                if all(np.allclose(xh[f], hist[u][1][f]) for f in range(F)):
+                    per = len(hist) - 1 - u
+                    return dec, True, t + 1, ("fp" if per == 1 else f"cycle{per}"), \
+                        decs, per
+    return hist[-1][0], False, T, "timeout", decs, 0
 
 
 def run_instance(N, D, F, kind, T, theta, seed):
@@ -104,24 +118,50 @@ def run_instance(N, D, F, kind, T, theta, seed):
     books = make_books(N, D, F, kind, rng)
     true = tuple(int(rng.integers(D)) for _ in range(F))
     c = bind([books[f][:, true[f]] for f in range(F)])
-    dec, halted, iters, _ = resonator(c, books, kind, T, theta, rng)
-    success = (dec == true)
+    dec, halted, iters, tag, decs, per = resonator(c, books, kind, T, theta, rng)
+    success = (dec == true)                       # FINAL-STATE correctness at the cap
+    hits = [i for i, d in enumerate(decs) if d == true]
+    ever = bool(hits)                             # did it ever reach the answer?
+    first = hits[0] + 1 if hits else -1           # first-hitting iteration
+    occupancy = len(hits) / max(1, len(decs))
     if success:
         mode = "ok"
     elif halted:
-        mode = "spurious"          # halted at a wrong fixed point
+        mode = "spurious-fp" if tag == "fp" else "cycle"
     else:
-        mode = "limitcycle"        # non-halting
-    return success, mode, iters
+        mode = "timeout"           # a capped run, NOT a detected cycle
+    return success, mode, iters, ever, first, occupancy, per
 
 
-def prob(N, D, F, kind, T, theta, n_inst, seed0):
+def prob(N, D, F, kind, T, theta, n_inst, seed0, full=False):
+    """Success statistics.
+
+    `succ` is FINAL-STATE correctness at the iteration cap -- the quantity the
+    earlier version reported.  `ever` is first-hitting: did the run ever decode the
+    true factorization?  The distinction matters because a resonator can verify a
+    candidate for free (re-bind and compare), so first-hitting is the operationally
+    natural stopping rule, and the two diverge sharply at high noise.
+    `timeout` counts capped runs; `cycle` counts runs where a genuine state repeat
+    was DETECTED (deterministic runs only -- see resonator()).
+    """
     res = [run_instance(N, D, F, kind, T, theta, seed0 + i) for i in range(n_inst)]
     succ = np.mean([r[0] for r in res])
     modes = [r[1] for r in res]
-    nohalt = np.mean([m == "limitcycle" for m in modes])
-    spur = np.mean([m == "spurious" for m in modes])
-    return float(succ), float(nohalt), float(spur)
+    timeout = np.mean([m == "timeout" for m in modes])
+    spur = np.mean([m == "spurious-fp" for m in modes])
+    cyc = np.mean([m == "cycle" for m in modes])
+    if not full:
+        return float(succ), float(timeout), float(spur)
+    ever = np.mean([r[3] for r in res])
+    hits = [r[4] for r in res if r[4] > 0]
+    return dict(succ=float(succ), ever=float(ever), timeout=float(timeout),
+                spurious_fp=float(spur), cycle_detected=float(cyc),
+                occupancy=float(np.mean([r[5] for r in res])),
+                median_first_hit=float(np.median(hits)) if hits else -1.0,
+                n=n_inst,
+                succ_se=float(np.sqrt(succ * (1 - succ) / n_inst)),
+                ever_se=float(np.sqrt(np.mean([r[3] for r in res]) *
+                                      (1 - np.mean([r[3] for r in res])) / n_inst)))
 
 
 if __name__ == "__main__":

@@ -43,61 +43,137 @@
       "coherent": 1.0,
       "naive": 1.0,
       "decohered": 0.2,
-      "decode": 1.0
+      "decode": 1.0,
+      "refunbind": 1.0,
+      "rawspec": 1.0
     },
     {
       "R": 1.0,
       "coherent": 1.0,
       "naive": 0.51,
       "decohered": 0.12,
-      "decode": 1.0
+      "decode": 1.0,
+      "refunbind": 1.0,
+      "rawspec": 1.0
     },
     {
       "R": 3.0,
       "coherent": 1.0,
       "naive": 0.22,
       "decohered": 0.16,
-      "decode": 1.0
+      "decode": 1.0,
+      "refunbind": 1.0,
+      "rawspec": 1.0
     },
     {
       "R": 8.0,
       "coherent": 1.0,
       "naive": 0.22,
       "decohered": 0.2,
-      "decode": 1.0
+      "decode": 1.0,
+      "refunbind": 1.0,
+      "rawspec": 1.0
     },
     {
       "R": 20.0,
       "coherent": 1.0,
       "naive": 0.14,
       "decohered": 0.19,
-      "decode": 1.0
+      "decode": 1.0,
+      "refunbind": 1.0,
+      "rawspec": 1.0
     }
   ],
+  "route_cost_blocks_ms": {
+    "fingerprint": [
+      0.07278898333121712,
+      0.0734156766642021,
+      0.07359596999473676,
+      0.07103333999718112,
+      0.06904051000068041
+    ],
+    "decode": [
+      1.655998023331146,
+      1.6875665166662657,
+      1.5929682533351297,
+      1.6037649333338777,
+      1.625715396664115
+    ],
+    "refunbind": [
+      1.7039634066653284,
+      1.6721828066692979,
+      1.686574403332391,
+      1.6735488799956026,
+      1.6661882866659046
+    ],
+    "rawspec": [
+      0.012407446671810854,
+      0.012436743333334258,
+      0.01229971666665127,
+      0.012346873336355202,
+      0.012363519999780692
+    ]
+  },
+  "timing_protocol": "query only (test bundle prebuilt), single-threaded BLAS, 20 warm-up calls, median of 5 blocks x 300 calls",
   "route_cost_ms": {
-    "fingerprint": 0.45366506004938856,
-    "decode": 0.4566102399257943
+    "fingerprint": 0.07278898333121712,
+    "decode": 1.625715396664115,
+    "refunbind": 1.6735488799956026,
+    "rawspec": 0.012363519999780692
   },
   "noise": [
     {
       "noise": 0.1,
-      "coherent": 1.0
+      "coherent": 1.0,
+      "rawspec": 1.0
     },
     {
       "noise": 0.3,
-      "coherent": 0.8
+      "coherent": 0.8,
+      "rawspec": 0.76
     },
     {
       "noise": 0.6,
-      "coherent": 0.64
+      "coherent": 0.64,
+      "rawspec": 0.6
     },
     {
       "noise": 1.0,
-      "coherent": 0.43
+      "coherent": 0.43,
+      "rawspec": 0.39
     },
     {
       "noise": 1.5,
-      "coherent": 0.3
+      "coherent": 0.3,
+      "rawspec": 0.32
     }
-  ]
+  ],
+  "collisions": {
+    "reflection_sim": 0.9999999999997421,
+    "homometric_sim": 0.9999999999997942,
+    "control_sim": 0.7017259072934925,
+    "homometric_pair": [
+      [
+        0.0,
+        1.0,
+        4.0,
+        10.0,
+        12.0,
+        17.0
+      ],
+      [
+        0.0,
+        1.0,
+        8.0,
+        11.0,
+        13.0,
+        17.0
+      ]
+    ]
+  },
+  "rawspec": {
+    "variant": "cosine similarity on mean-centered raw |b|^2 N-vectors; templates = root-0 class bundles (fingerprint protocol)",
+    "overall_acc": 1.0,
+    "cost_ms": 0.012363519999780692
+  }
 }

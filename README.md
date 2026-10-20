@@ -1,137 +1,135 @@
-# The Physics of Hyperdimensional Computing
+# The Physics of Hyperdimensional Computing: code and results
 
-**A phase-space lens for Vector Symbolic Architectures (VSA / Hyperdimensional Computing).**
+This repository holds the code and the results behind the paper
 
-This repository accompanies the manuscript *The Physics of Hyperdimensional Computing:
-A Phase-Space Lens for Vector Symbolic Architectures* ([`paper/`](paper/)). It contains
-the complete, seeded, CPU-only experiments behind every result, and the figure-generation
-script that reproduces every plot in the paper.
+> O. Yilmaz, *The Physics of Hyperdimensional Computing: A Phase-Space Lens for Vector Symbolic
+> Architectures* (2026).
 
-VSA/HDC has a mature information-theoretic theory of **capacity** but no **physics** — no
-action scale, no temperature, no phase space. Treating an FPE substrate as a *classical
-complex wave* (the stance of Computational Wave Field Theory), we supply one, and test what
-it buys.
+Every experiment is seeded and runs on a CPU. Every data figure in the paper regenerates from the
+result files committed here.
 
----
+## The idea in brief
 
-## The story in one screen
+Vector Symbolic Architectures (VSA), also called Hyperdimensional Computing (HDC), store continuous
+values with Fractional Power Encoding (FPE). FPE writes a value `x` into the phases `exp(i x θ_j)` of
+a long complex vector. The paper treats such a vector as a classical wave and shows that FPE is a
+computational phase space. Value and frequency are conjugate, and resolution times bandwidth is a
+fixed cell. Bundling adds amplitudes coherently, and excess Wigner negativity measures that
+coherence. The coherence also computes. One power-spectrum readout returns the histogram of all
+pairwise differences of the stored values, and it gives translation-invariant recognition without
+decoding. Read as a budget, the uncertainty relation gives squeezing, a warp that moves resolution
+to where it is needed.
 
-Fractional Power Encoding (FPE) maps a value `x` to phasors `e^{i x θ}`. We show this is a
-genuine **computational phase space** and develop a connected chain of results on it — from
-the uncertainty cell through a coherence witness and a new operation to a proven
-order-optimality theorem for the bundle-as-sketch, a hardware bit-precision rule, and the
-identity that RoPE positional encoding *is* FPE. Each result carries an explicit honesty
-fence — the mechanisms are classical coherent-wave / signal-processing physics (Bochner,
-Gabor, Wigner–Ville, Wiener–Khinchin, Alon–Matias–Szegedy), named for VSA.
-
-| # | result | experiment | verdict |
-|---|--------|-----------|---------|
-| 1 | **FPE = phase space**: kernel = FT(frequencies); resolution × bandwidth = ℏ_c ≈ 1.19 | `cwf_fpe_uncertainty.py`, `cwf_fpe_phasespace.py` | clean (framing) |
-| 2 | **Wigner-negativity coherence witness**: bundling is ℓ² (coherent) not ℓ¹ (mixture); decoherence removes 88% | `cwf_fpe_wigner.py` | lands |
-| 3 | **Coherence is a usable resource**: interference computes the autocorrelation / a hidden period | `cwf_fpe_interference.py` | lands |
-| 4 | **Useful task**: translation-invariant recognition (100% under transposition; naive → chance) | `cwf_fpe_invariant.py` | lands |
-| 5 | **New operation**: squeezed / foveated FPE — resolution redistributed at conserved budget | `cwf_fpe_squeezing.py`, `cwf_fpe_fovea_task.py` | new op |
-| 6 | **Classical limit**: decoherence + coarse-graining (Husimi); ℏ_c = quantum–classical scale | `cwf_fpe_phasespace.py`, `cwf_fpe_wigner.py` | clean |
-| 7 | **Complexity advantage?** — **no algorithmic separation** (classical FFT ties); representational only | `cwf_fpe_complexity.py` | clean negative |
-| 8 | **The bundle is an order-optimal relational sketch**: Var = Θ(k²/N) empirical characteristic function; matches the AGMS ±1 sketch and Woodruff's Ω(1/ε²) lower bound (theorem + numerics) | `cwf_fpe_ams.py` | theorem |
-| 9 | **Computational temperature** θ_c for resonator factorization; capacity boundary is a **crossover**, not a transition | `cwf_resonator_halting.py`, `cwf_resonator_scaling.py` | lands / refuted |
-| 10 | **The cell on hardware**: coherence survives quantization only above ≥ 2 phase bits (photonic jitter / PCM bit-depth) | `cwf_fpe_hardware.py`, `cwf_fpe_quantize.py` | lands |
-| 11 | **Connections**: RoPE *is* FPE (an elementary identity); a linear-attention / SSM state is a running relational sketch | `cwf_fpe_rope.py`, `cwf_fpe_ssm.py` | bridge |
-
-### Scope (stated plainly)
-
-This is **classical coherent-wave computation** described in phase-space vocabulary — **not
-quantum computation**. VSA cannot realize a quantum speedup: binding is dimension-preserving,
-so there is no exponential tensor-product Hilbert space and no entanglement. "Non-classical"
-here means *not a classical probability mixture* (a coherent wave), not quantum
-non-classicality in the Hudson/contextuality sense. The value of the lens is precisely: a
-**unifying framework**, one **new operation** (squeezing), one **applicable capability**
-(invariant recognition), and one **proven optimality result** (the bundle is an order-optimal
-relational sketch) — bounded by two clean negatives.
-
-The same dimension-preserving structure sets a sharp reach limit into nonclassical
-statistics: a hypervector space can *host* single-system (KCBS-type) contextuality but not
-the tensor-product (Bell-type) tier, and whether binding can *generate* rather than merely
-host that geometry is left open. That thread — the Computational Wave Field Theory
-tie-in — is developed in a separate foundations manuscript; this repository is the
-mainstream phase-space paper and its experiments.
-
----
+Everything here is classical computation with coherent waves. The paper makes no quantum claim.
 
 ## Layout
 
 ```
-experiments/   self-contained, seeded NumPy/SciPy experiments + committed *_results.json
-paper/         the manuscript (LaTeX + PDF) and make_figures.py (regenerates all figures)
+experiments/      31 seeded experiment scripts, each with its committed *_results.json
+make_figures.py   regenerates every figure of the paper, schematics included, into figures/
+requirements.txt  minimum versions of the dependencies
 ```
+
+## Requirements
+
+Python 3.10 or later, with
+
+```
+numpy>=2.0
+scipy>=1.10
+matplotlib>=3.6
+threadpoolctl>=3.0
+```
+
+The committed results were produced with Python 3.10.12, NumPy 2.2.6, SciPy 1.15.3,
+Matplotlib 3.10.3 and threadpoolctl 3.6.0.
 
 ## Reproduce
 
 ```bash
 pip install -r requirements.txt
 
-# any experiment prints its results and (re)writes its *_results.json:
+# every figure, from the committed result files (about 20 seconds)
+python3 make_figures.py
+
+# one experiment: it prints its results and rewrites its *_results.json
 cd experiments
 python3 cwf_fpe_wigner.py
-python3 cwf_fpe_interference.py
-# ... etc.
 
-# regenerate all paper figures (300 dpi) from the committed results:
-cd ../paper
-python3 make_figures.py
+# every experiment, one after another (most scripts take seconds to a few minutes)
+for s in cwf_*.py; do python3 "$s"; done
 ```
 
-Every script is CPU-only, fixed-seed, and toy-scale (seconds to a couple of minutes). The
-heavier figure panels (Wigner heatmap, kernels, autocorrelation, resolution profiles) are
-recomputed inline with a fixed seed, so the figures are reproducible from a clean checkout.
+Run the experiment scripts from inside `experiments/`, because a few of them load a sibling script
+by its file name. `make_figures.py` finds `experiments/` on its own. To point it at another folder,
+set the environment variable `CWFT_EXPERIMENTS`.
 
-## The experiments
+## Where each result comes from
 
-- **`cwf_fpe_uncertainty.py`** — the kernel is the Fourier transform of the frequency
-  distribution; the reciprocal resolution–bandwidth law (the cell ℏ_c); bundling/holding
-  capacity ∝ N.
-- **`cwf_fpe_phasespace.py`** — the full (x, p) phase space: position/momentum states, the
-  conjugate Heisenberg–Weyl flows (translation = binding, boost = modulation), and the ℏ_c → 0
-  classical limit (orthogonality + the Husimi coarse-graining).
-- **`cwf_fpe_wigner.py`** — the Wigner-negativity witness: cat-state negativity, onset with
-  separation, and the decoherence control (−88%).
-- **`cwf_fpe_interference.py`** — the coherence as a resource: autocorrelation / hidden-period
-  finding by interference, the decoherence + energy controls.
-- **`cwf_fpe_invariant.py`** — translation/transposition-invariant recognition (the "chord"
-  task), coherent vs naive vs decohered, with a noise-robustness sweep.
-- **`cwf_fpe_squeezing.py`**, **`cwf_fpe_fovea_task.py`** — squeezed / foveated FPE:
-  resolution redistribution, the conservation (anti-free-lunch) check, composability, and a
-  downstream task where the redistributed resolution pays off.
-- **`cwf_fpe_complexity.py`** — the complexity question: bundle readout vs naive O(k²) vs
-  classical histogram→FFT; the honest no-separation verdict.
-- **`cwf_fpe_ams.py`** — the bundle as an Alon–Matias–Szegedy / empirical-characteristic-
-  function sketch: the Var = Θ(k²/N) error law, the order-optimality match against the AGMS
-  ±1 sketch, and the Woodruff Ω(1/ε²) lower bound.
-- **`cwf_fpe_hardware.py`**, **`cwf_fpe_quantize.py`** — the cell under finite hardware:
-  phase quantization / jitter, and the ≥ 2-phase-bit floor for coherence to survive.
-- **`cwf_fpe_rope.py`**, **`cwf_fpe_ssm.py`** — the connections: RoPE positional encoding
-  as an instance of FPE, and a linear-attention / state-space-model state as a running
-  relational sketch.
-- **`cwf_resonator_halting.py`**, **`cwf_resonator_scaling.py`**,
-  **`cwf_resonator_tcap.py`**, **`cwf_resonator_thetahi.py`** — resonator factorization as a
-  halting problem with a noise temperature θ_c: the phase diagram, finite-size scaling to
-  N = 2048 (the capacity boundary is a crossover, not a phase transition), and the
-  temperature/capacity sweeps.
-- Supporting checks: **`cwf_fpe_stats.py`**, **`cwf_fpe_variance.py`**,
-  **`cwf_fpe_weyl.py`**, **`cwf_fpe_highdim.py`**, **`cwf_fpe_localcell.py`**,
-  **`cwf_fpe_models.py`**, **`cwf_fpe_beyond_capacity.py`** — the statistical, variance,
-  Weyl-relation, high-dimensional, local-cell, cross-model, and beyond-capacity controls
-  behind the numbers in the paper.
+Section, figure and table numbers refer to the paper and its Supplemental Material (S).
+
+| Paper | Result | Script |
+|---|---|---|
+| Sec. 4, Figs. 2 and S5A | the kernel is the Fourier transform of the codebook, the cell ℏ_c, the capacity check | `cwf_fpe_uncertainty.py` |
+| Sec. 4 | the Weyl phase of translation and boost | `cwf_fpe_weyl.py` |
+| Sec. 4, Fig. 3 | which of the two capacity counts binds | `cwf_fpe_budgets.py` |
+| Sec. 4, Supp. S2 | the cell on other VSA carriers | `cwf_fpe_models.py` |
+| Sec. 5, Fig. 4 | the Wigner-negativity witness | `cwf_fpe_wigner.py` |
+| Sec. 5, Fig. S19A | removal of the excess negativity over codebook seeds | `cwf_fpe_stats.py` |
+| Sec. 5, Supp. S3 | phase quantization | `cwf_fpe_quantize.py` |
+| Supp. S3 | sign conventions and their unit tests | `cwf_fpe_wigner_convention.py` |
+| Sec. 6, Fig. S9 | the relational readout and hidden-period finding | `cwf_fpe_interference.py` |
+| Sec. 7, Figs. 5 and S11 | translation-invariant recognition and its collisions | `cwf_fpe_invariant.py` |
+| Sec. 7 | the baseline on raw values | `cwf_fpe_invariant_baseline.py` |
+| Sec. 7, Supp. S4, Fig. S13 | recognition in m dimensions | `cwf_fpe_invariant_md.py` |
+| Sec. 8, Fig. 6A | squeezed (foveated) FPE | `cwf_fpe_squeezing.py` |
+| Sec. 8, Fig. 6B | the local cell | `cwf_fpe_localcell.py` |
+| Sec. 8, Supp. S5, Table S2, Fig. S14 | the decoding task under three budgets | `cwf_fpe_fovea_task.py` |
+| Supp. S6.1, Fig. S16 | velocity templates for values in motion | `cwf_fpe_chirp.py` |
+| Supp. S6.2, Fig. S17 | the joint (x, p) code for trajectories | `cwf_fpe_trajectory.py` |
+| Supp. S6.2 | regime recognition | `cwf_fpe_regime.py` |
+| Supp. S7, Fig. S19B and C | orthogonal codes and coarse-graining | `cwf_fpe_phasespace.py` |
+
+Figures S8 and S20 are computed inside `make_figures.py`, with fixed seeds.
+
+The remaining scripts come from earlier, longer versions of the paper: `cwf_fpe_ams.py`,
+`cwf_fpe_beyond_capacity.py`, `cwf_fpe_bispectrum.py`, `cwf_fpe_complexity.py`,
+`cwf_fpe_hardware.py`, `cwf_fpe_hashjoin.py`, `cwf_fpe_highdim.py`, `cwf_fpe_variance.py`,
+`cwf_rope_fovea.py`, `cwf_resonator_halting.py`, `cwf_resonator_scaling.py` and
+`cwf_resonator_thetahi.py`. The current paper doesn't use them. They stay here because
+`make_figures.py` still draws their figures.
+
+## Expected runtimes
+
+Measured one script at a time on an Intel Core i9-14900K, while other work ran on the machine.
+
+| Script | Time |
+|---|---|
+| `make_figures.py` | 16 s |
+| `cwf_fpe_ams.py` | 17 s |
+| `cwf_fpe_beyond_capacity.py` | 5.3 min |
+| `cwf_fpe_bispectrum.py` | 19 s |
+| `cwf_fpe_budgets.py` | 41 s |
+| `cwf_fpe_chirp.py` | 42 s |
+| `cwf_fpe_complexity.py` | 1.5 min |
+| `cwf_fpe_fovea_task.py` | 3.0 min |
+| `cwf_fpe_hardware.py` | 4.2 min |
+| `cwf_fpe_hashjoin.py` | 48 s |
+
+The remaining scripts are being timed, and this table will be completed.
 
 ## Citation
 
-If you use this work, please cite the manuscript (see [`paper/`](paper/)) and the
-Computational Wave Field Theory book:
+If you use this code, please cite the paper:
 
-> O. Yilmaz. *Computational Wave Field Theory*. Zenodo, v6, 2026.
-> [doi:10.5281/zenodo.20665921](https://doi.org/10.5281/zenodo.20665921)
+> O. Yilmaz, *The Physics of Hyperdimensional Computing: A Phase-Space Lens for Vector Symbolic
+> Architectures* (2026).
+
+The phase-space stance comes from Computational Wave Field Theory:
+
+> O. Yilmaz, *Computational Wave Field Theory*, Zenodo, v9 (2026).
+> [doi:10.5281/zenodo.22997207](https://doi.org/10.5281/zenodo.22997207)
 
 ## License
 
-Code released under the MIT License (see [`LICENSE`](LICENSE)). The manuscript text and
-figures are © the author.
+The code and the result files are released under the MIT License (see [`LICENSE`](LICENSE)).

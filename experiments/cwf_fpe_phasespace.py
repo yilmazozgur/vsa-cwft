@@ -1,6 +1,6 @@
 """
 cwf_fpe_phasespace.py -- completing the story: the full position-momentum phase
-space, and the hbar_c -> 0 classical limit.  (VSA_CWFT_NOTE sec.5; foundational
+space, and the two interference-suppressing regimes.  (VSA_CWFT_NOTE sec.5; foundational
 rounding-out, does NOT change the no-separation verdict.)
 
 FPE encodes a value x with phases e^{i x theta}; the conjugate coordinate is the
@@ -8,18 +8,23 @@ frequency theta (= 'momentum' p, the Fourier-dual of x).  A state is a blob in t
 (x, p) plane:
   - POSITION state: full bandwidth -> sharp in x, broad in p.
   - MOMENTUM state: narrow bandwidth -> broad in x, sharp in p.
-So the resolution<->bandwidth law IS the position-momentum uncertainty
-Dx * Dp >= hbar_c / 2.  The two conjugate phase-space flows:
+The resolution<->bandwidth tradeoff is the position-momentum uncertainty (the
+1/2 bound holds in the intensity-std convention for the continuum profile; the
+HWHM widths here show the same conjugate tradeoff).  The two conjugate flows:
   - translation in x  = binding with e^{i a theta}  (the native FPE shift),
-  - boost in p        = modulation psi(x) -> e^{i p0 x} psi(x).
+  - boost in p        = modulation psi(x) -> e^{-i p0 x} psi(x)
+    (the sign pairs with the decoder e^{-i x theta}; p = theta convention,
+     see cwf_fpe_wigner_convention.py -- the moments below report <p> on that
+     axis, so a decoded atom at carrier omega0 sits at p = +omega0).
 
-The hbar_c -> 0 CLASSICAL LIMIT has two faces:
-  (a) bandwidth -> infinity: the kernel -> a delta, distinct values become
-      ORTHOGONAL (perfectly distinguishable, no interference) -- the classical
-      lookup-table limit.
-  (b) coarse-graining the Wigner at the hbar_c cell gives the (non-negative)
-      HUSIMI distribution -- the wave negativity survives only when you resolve
-      phase space FINER than hbar_c.  So hbar_c is the quantum-classical scale.
+Two distinct interference-suppressing regimes (NOT one 'classical limit'):
+  (a) bandwidth -> infinity: the kernel -> a delta; distinct values become
+      orthogonal TO THE SIMILARITY READOUT (the codes decorrelate) -- the
+      lookup-table / orthogonal-code regime.  A bundle of such codes remains
+      a coherent superposition; orthogonality is not decoherence.
+  (b) coarse-graining the Wigner past the cell gives the (non-negative)
+      HUSIMI distribution -- interference is visible only when phase space is
+      resolved finer than the cell.
 
 CPU, numpy/scipy, seeded.  Writes cwf_fpe_phasespace_results.json.
 """
@@ -56,14 +61,17 @@ def _hwhm(dist, grid):
 
 def moments(psi, xs):
     """(<x>, Dx) from |psi|^2, (<p>, Dp) from |FFT psi|^2; widths = HWHM (the
-    second moment is corrupted by the 1/sqrt(N) floor over a wide window)."""
+    second moment is corrupted by the 1/sqrt(N) floor over a wide window).
+    <p> is reported on the p = theta axis: the decoder pairs x with -theta, so
+    the np.fft frequency axis is negated (pure-tone unit test:
+    cwf_fpe_wigner_convention.py)."""
     dx = xs[1] - xs[0]
     Px = np.abs(psi) ** 2
     mx = (xs * Px).sum() / Px.sum(); Dx = _hwhm(Px, xs)
     ps = np.fft.fftshift(2 * np.pi * np.fft.fftfreq(len(xs), dx))
     Pp = np.fft.fftshift(np.abs(np.fft.fft(psi)) ** 2)
     mp = (ps * Pp).sum() / Pp.sum(); Dp = _hwhm(Pp, ps)
-    return float(mx), float(Dx), float(mp), float(Dp)
+    return float(mx), float(Dx), float(-mp), float(Dp)
 
 
 def wigner_ville(psi):
@@ -82,7 +90,7 @@ def negativity(W):
 
 if __name__ == "__main__":
     print("=" * 74)
-    print("THE FULL PHASE SPACE + the hbar_c -> 0 classical limit")
+    print("THE FULL PHASE SPACE + the two interference-suppressing regimes")
     print("=" * 74)
     N, omega0 = 4000, 16.0                    # high carrier: no positive-freq truncation
     xs = np.linspace(-12, 12, 480)
@@ -111,8 +119,8 @@ if __name__ == "__main__":
     mx0, _, mp0, _ = moments(profile(th, 0.0, xs), xs)
     # translation: bind with e^{i a theta} <=> encode value x0=a -> shifts <x>
     mxT, _, mpT, _ = moments(profile(th, 3.0, xs), xs)        # x0 = 3
-    # boost: multiply psi by e^{i p0 x} -> shifts <p>
-    mxB, _, mpB, _ = moments(profile(th, 0.0, xs, boost=4.0), xs)
+    # boost: multiply psi by e^{-i p0 x} -> raises <p> by p0 (p = theta axis)
+    mxB, _, mpB, _ = moments(profile(th, 0.0, xs, boost=-4.0), xs)
     print(f"    base state:         <x>={mx0:+.2f}, <p>={mp0:.2f}")
     print(f"    translate (x0=3):   <x>={mxT:+.2f} (shifted ~+3), <p>={mpT:.2f} (unchanged)")
     print(f"    boost (p0=4):       <x>={mxB:+.2f} (unchanged), <p>={mpB:.2f} (shifted ~+4)")
@@ -121,7 +129,7 @@ if __name__ == "__main__":
     out["part1b_flows"] = {"base_x": mx0, "trans_x": mxT, "base_p": mp0, "boost_p": mpB}
 
     # ---- Part 2a: classical limit via bandwidth -> infinity (orthogonality) ----
-    print("\n[2a] hbar_c -> 0 (bandwidth -> infinity): distinct values become orthogonal")
+    print("\n[2a] bandwidth -> infinity: distinct values become orthogonal codes")
     Delta = 1.0
     P2a = []
     for sig in [0.5, 1.0, 2.0, 4.0, 8.0, 16.0]:
@@ -133,7 +141,9 @@ if __name__ == "__main__":
         print(f"    bandwidth sigma={sig:>5}: |overlap| K({Delta})={ov:.3f}")
     out["part2a_orthogonality"] = P2a
     print(f"    -> overlap -> 0 as bandwidth grows: distinct values become perfectly")
-    print(f"       distinguishable (no interference) -- the classical lookup-table limit.")
+    print(f"       distinguishable to the similarity readout -- the orthogonal-code")
+    print(f"       (lookup-table) regime. (A bundle of orthogonal codes is still a")
+    print(f"       coherent superposition: orthogonality is not decoherence.)")
 
     # ---- Part 2b: classical limit via coarse-graining (Wigner -> Husimi) ----
     print("\n[2b] coarse-graining the Wigner -> the (positive) Husimi = classical limit")
@@ -148,8 +158,8 @@ if __name__ == "__main__":
     out["part2b_husimi"] = P2b
     print(f"    -> negativity -> 0 as the coarse-graining reaches the hbar_c cell (the")
     print(f"       Husimi is non-negative): the wave (interference) is visible only when")
-    print(f"       you resolve phase space FINER than hbar_c. hbar_c IS the quantum-")
-    print(f"       classical scale. (Complements the decoherence route, sec.5d.)")
+    print(f"       you resolve phase space finer than the cell. (A distinct mechanism")
+    print(f"       from the ensemble-dephasing control of the Wigner experiment.)")
 
     with open("cwf_fpe_phasespace_results.json", "w") as f:
         json.dump(out, f, indent=2)

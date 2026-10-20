@@ -28,19 +28,37 @@ def profile(theta, x0, xs):
     return np.exp(1j * np.outer(x0 - xs, theta)).mean(1)
 
 
+def translate(f, a, xs):
+    """Numerically translate a sampled field by a: (T_a f)(x) = f(x - a).
+
+    Done by Fourier shift, INDEPENDENTLY of the identity under test.  The earlier
+    version of this script built the second operator ordering from the analytic
+    relation e^{ip(x-a)} psi(x-a) = e^{-ipa} u(x), so the measured phase was
+    a*p by floating-point construction and the reported 1e-16 was roundoff, not
+    evidence.  Nothing below uses the commutator it is trying to verify.
+    """
+    n = len(xs)
+    dx = xs[1] - xs[0]
+    k = np.fft.fftfreq(n, d=dx)
+    return np.fft.ifft(np.fft.fft(f) * np.exp(-2j * np.pi * k * a))
+
+
 def main():
     rng = np.random.default_rng(7)
     theta = SIGMA * rng.standard_normal(N)
     rows, devs = [], []
     for a in [0.5, 1.0, 2.0, 3.5]:
         for p in [0.5, 1.0, 2.0, 3.0]:
-            # order 1: bind (native translation x0 -> x0+a), decode, then modulate
-            u = np.exp(1j * p * GRID) * profile(theta, X0 + a, GRID)
-            # order 2: decode, modulate, then translate the modulated field by a
-            g = np.exp(1j * p * GRID) * profile(theta, X0, GRID)
-            # analytic translate: e^{ip(x-a)} psi_{x0}(x-a) = e^{-ipa} u(x)
-            v = np.exp(1j * p * (GRID - a)) * profile(theta, X0 + a, GRID)
-            meas = float(np.angle(np.vdot(v, u)))          # expect +a*p (mod 2pi)
+            # Boost sign follows the manuscript: M_p psi = e^{-i p x} psi, which
+            # raises <p> by p (the earlier script used e^{+ipx}, the opposite).
+            # order 1: M_p T_a psi -- bind (native translation x0 -> x0+a), decode,
+            #          then modulate.
+            u = np.exp(-1j * p * GRID) * profile(theta, X0 + a, GRID)
+            # order 2: T_a M_p psi -- decode at x0, modulate, then TRANSLATE the
+            #          modulated field numerically.  Expect v = e^{+i a p} u.
+            g = np.exp(-1j * p * GRID) * profile(theta, X0, GRID)
+            v = translate(g, a, GRID)
+            meas = float(np.angle(np.vdot(u, v)))          # expect +a*p (mod 2pi)
             want = float((a * p + np.pi) % (2 * np.pi) - np.pi)
             dev = abs(np.angle(np.exp(1j * (meas - want))))
             rows.append(dict(a=a, p=p, measured=meas, expected=want, dev=dev))

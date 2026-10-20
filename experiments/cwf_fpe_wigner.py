@@ -116,6 +116,84 @@ if __name__ == "__main__":
         print(f"    Delta={D:>4}: negativity={neg:.4f}  excess={neg - base:+.4f}")
     out["part1_separation"] = P1
 
+    # ---- Part 1b: the excess is CARRIER-LOCKED, not resolution-onset ---------
+    # Factor the common boost out of a two-atom bundle on a carrier codebook:
+    #   psi_1 + psi_2 = e^{-i w0 x} [ e^{i w0 x1} G(x-x1) + e^{i w0 x2} G(x-x2) ],
+    # a real-Gaussian cat with RELATIVE PHASE phi = w0 * Delta.  So the fringe
+    # contrast oscillates in Delta with period 2*pi/w0, and only its ENVELOPE grows
+    # with separation.  The coarse grid of Part 1 aliases this; sample it finely.
+    W0 = 4.0
+    print(f"\n[1b] the excess is carrier-locked: predicted period 2*pi/w0 = "
+          f"{2*np.pi/W0:.3f} in Delta (resolution ~ 1/bw = 1.0)")
+    P1B = []
+    for D in np.arange(0.25, 3.01, 0.25):
+        neg, sd = avg_neg(lambda th, D=D: bundle_profile([5 - D / 2, 5 + D / 2],
+                                                         th, xs), ntr=10)
+        P1B.append(dict(sep=float(D), neg=neg, sd=sd, excess=neg - base,
+                        carrier_phase=float(W0 * D)))
+        print(f"    Delta={D:4.2f}  phi=w0*Delta={W0*D:5.2f} rad  "
+              f"excess={neg - base:+.4f} +/- {sd:.4f}")
+    ex = np.array([r["excess"] for r in P1B])
+    ds = np.array([r["sep"] for r in P1B])
+    print(f"    -> peak at Delta={ds[int(np.argmax(ex))]:.2f} (BELOW the resolution 1.0); "
+          f"excess is non-monotone in Delta.")
+    out["part1b_carrier"] = P1B
+
+    # ---- Part 1c: HUDSON, stated correctly ----------------------------------
+    # The continuum profile of a carrier-Gaussian codebook is
+    #   psi(x) = int p(th) e^{i(x0-x)th} dth = e^{-i w0 u} e^{-sig^2 u^2/2},  u = x-x0,
+    # i.e. a Gaussian times a linear phase = a translated, boosted GAUSSIAN state.
+    # Hudson's theorem (W >= 0 iff Gaussian, for pure states) therefore predicts a
+    # floor of EXACTLY ZERO here.  The measured ~0.055 is an ESTIMATOR artifact of
+    # finite N and the finite x-window, and it shrinks as the estimate is refined.
+    print("\n[1c] Hudson: the continuum profile IS Gaussian, so the predicted floor is 0")
+
+    def psi_continuum(x0, sig=1.0, w0=W0, grid=None):
+        u = (xs if grid is None else grid) - x0
+        return np.exp(-1j * w0 * u) * np.exp(-sig ** 2 * u ** 2 / 2)
+
+    def profile_chunked(v, th, grid, chunk=20000):
+        """Memory-safe decode: never materialises a len(grid) x len(th) matrix."""
+        acc = np.zeros(len(grid), dtype=complex)
+        for a in range(0, len(th), chunk):
+            b = min(a + chunk, len(th))
+            acc += np.exp(-1j * np.outer(grid, th[a:b])) @ v[a:b]
+        return acc / len(th)
+
+    cont = float(negativity(wigner_ville(psi_continuum(5.0))))
+    print(f"    continuum single atom (analytic Gaussian) : negativity = {cont:.6f}")
+    # the theta>0 truncation the manuscript blames contributes essentially nothing:
+    # N(4,1) truncated at 0 loses Phi(-4) = 3.2e-5 of its mass.
+    tg = np.linspace(1e-6, 12.0, 40000)
+    w = np.exp(-(tg - W0) ** 2 / 2)
+    w /= w.sum()
+    psi_tr = (np.exp(-1j * np.outer(xs - 5.0, tg)) @ w)
+    trunc = float(negativity(wigner_ville(psi_tr)))
+    print(f"    continuum, theta>0 truncated              : negativity = {trunc:.6f}")
+    # finite-N: the floor is sampling noise and it decays
+    NS = []
+    for Nn in [3000, 30000, 100000]:
+        th = W0 + 1.0 * RNG.standard_normal(Nn)
+        th = th[th > 0]
+        v = fpe(5.0, th)
+        nv = float(negativity(wigner_ville(profile_chunked(v, th, xs))))
+        NS.append(dict(N=int(len(th)), negativity=nv))
+        print(f"    finite N={len(th):>7}                        : negativity = {nv:.4f}")
+    # and it depends on where in the numerical window the bump sits
+    WP = []
+    for x0 in [0.0, 5.0, 12.0]:
+        nv, _ = avg_neg(lambda th, x0=x0: profile(fpe(x0, th), th, xs), ntr=6)
+        WP.append(dict(x0=x0, negativity=nv))
+        print(f"    finite N=3000, bump at x0={x0:>5.1f}            : negativity = {nv:.4f}")
+    print("    -> a quantity that depends on N and on window position is a property")
+    print("       of the ESTIMATOR, not of the state.  Hence the excess must be taken")
+    print("       against the matched incoherent baseline W1+W2, measured identically.")
+    out["part1c_hudson"] = dict(continuum_single=cont, continuum_truncated=trunc,
+                                finite_N=NS, window_position=WP,
+                                note="Hudson predicts 0 for the Gaussian continuum "
+                                     "profile; the measured floor is an estimator "
+                                     "artifact of finite N and finite window.")
+
     # ---- Part 2: coherent vs decohered mixture (the witness) ----
     print(f"\n[2] coherent superposition vs decohered MIXTURE (phase-randomized):")
     centers = [2.0, 8.0]
@@ -137,8 +215,18 @@ if __name__ == "__main__":
     print(f"    -> decoherence removes {removed*100:.0f}% of the genuine negativity"
           f" ({'KILLS it -> ' if killed else ''}witnesses COHERENT (l2) superposition,")
     print(f"       not an l1 classical mixture).")
+    # matched incoherent reference for THIS run (added 2026-10 after external review):
+    # the same two atoms summed incoherently, W1 + W2 -- the reference the manuscript's
+    # removal statistics use (the single-value floor above is kept for continuity)
+    neg_inc = negativity(wigner_ville(bundle_profile([centers[0]], theta, xs))
+                         + wigner_ville(bundle_profile([centers[1]], theta, xs)))
+    removed_matched = (neg_coh - neg_mix) / (neg_coh - neg_inc + 1e-12)
+    print(f"    matched incoherent pair:  negativity = {neg_inc:.4f}  -> phase averaging "
+          f"removes {removed_matched*100:.1f}% of the excess over it")
     out["part2_decoherence"] = {"coherent": neg_coh, "mixture": neg_mix, "floor": base,
-                                "frac_removed": removed, "killed": killed}
+                                "frac_removed": removed, "killed": killed,
+                                "matched_incoherent": neg_inc,
+                                "frac_removed_matched": removed_matched}
 
     # ---- Part 3: negativity vs bundle size k ----
     print(f"\n[3] negativity vs bundle size k (well-separated values):")
